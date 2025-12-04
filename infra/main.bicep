@@ -34,21 +34,36 @@ var registryName = 'acr${replace(baseName, '-', '')}${uniqueSuffix}'
 var containerAppName = '${baseName}-app'
 var environmentName = '${baseName}-env'
 
-// Deploy Azure Container Registry
-module acr 'acr.bicep' = {
-  name: 'acr-deployment'
-  params: {
-    registryName: registryName
-    location: location
-    registrySku: 'Premium'
-    adminUserEnabled: true
-    tags: tags
-  }
-}
-
-// Get ACR credentials
-resource existingRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
+// Create Azure Container Registry directly (not as module) to access credentials
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
   name: registryName
+  location: location
+  tags: tags
+  sku: {
+    name: 'Premium'
+  }
+  properties: {
+    adminUserEnabled: true
+    publicNetworkAccess: 'Enabled'
+    networkRuleBypassOptions: 'AzureServices'
+    policies: {
+      quarantinePolicy: {
+        status: 'disabled'
+      }
+      trustPolicy: {
+        type: 'Notary'
+        status: 'disabled'
+      }
+      retentionPolicy: {
+        days: 7
+        status: 'enabled'
+      }
+    }
+    encryption: {
+      status: 'disabled'
+    }
+    dataEndpointEnabled: false
+  }
 }
 
 // Deploy Container App
@@ -58,30 +73,23 @@ module containerApp 'container-app.bicep' = {
     containerAppName: containerAppName
     environmentName: environmentName
     location: location
-    containerRegistryServer: acr.outputs.loginServer
+    containerRegistryServer: containerRegistry.properties.loginServer
     containerRegistryUsername: registryName
-    containerRegistryPassword: listCredentials(acr.outputs.registryId, '2023-07-01').passwords[0].value
-    containerImage: '${acr.outputs.loginServer}/wan-api:${containerImageTag}'
+    containerRegistryPassword: listCredentials(containerRegistry.id, '2023-07-01').passwords[0].value
+    containerImage: '${containerRegistry.properties.loginServer}/wan-api:${containerImageTag}'
     modelType: modelType
     minReplicas: minReplicas
     maxReplicas: maxReplicas
     cpu: '4.0'
     memory: '16Gi'
-    gpu: {
-      type: 'nvidia-a100'
-      count: 1
-    }
     targetPort: 8000
     tags: tags
   }
-  dependsOn: [
-    acr
-  ]
 }
 
 // Outputs
-output registryName string = acr.outputs.registryName
-output registryLoginServer string = acr.outputs.loginServer
+output registryName string = containerRegistry.name
+output registryLoginServer string = containerRegistry.properties.loginServer
 output containerAppUrl string = 'https://${containerApp.outputs.containerAppUrl}'
 output containerAppName string = containerApp.outputs.containerAppName
 output resourceGroupName string = resourceGroup().name

@@ -36,12 +36,6 @@ param cpu string = '4.0'
 @description('Memory (in Gi)')
 param memory string = '16Gi'
 
-@description('GPU type and count')
-param gpu object = {
-  type: 'nvidia-a100'
-  count: 1
-}
-
 @description('Target port for the container')
 param targetPort int = 8000
 
@@ -135,10 +129,9 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
           resources: {
             cpu: json(cpu)
             memory: memory
-            gpu: {
-              type: gpu.type
-              count: gpu.count
-            }
+            // GPU support in Container Apps is in preview
+            // When available, GPU will be configured through workload profiles
+            // The workloadProfileName 'gpu-a100' references NC24ads-A100-v4 VMs
           }
           env: [
             {
