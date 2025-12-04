@@ -80,7 +80,7 @@ module containerApp 'container-app.bicep' = {
     modelType: modelType
     minReplicas: minReplicas
     maxReplicas: maxReplicas
-    cpu: '4.0'
+    cpu: 4
     memory: '16Gi'
     targetPort: 8000
     tags: tags

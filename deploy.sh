@@ -42,8 +42,9 @@ IMAGE_TAG="${IMAGE_TAG:-latest}"
 MIN_REPLICAS="${MIN_REPLICAS:-1}"
 MAX_REPLICAS="${MAX_REPLICAS:-3}"
 
-# Derived names
-UNIQUE_SUFFIX=$(echo -n "$RESOURCE_GROUP" | md5sum | cut -c1-8)
+# Derived names (actual registry name will be determined by Bicep's uniqueString function)
+# This is just for logging/reference
+UNIQUE_SUFFIX=$(date +%s | tail -c 5)
 REGISTRY_NAME="acrwanvideoapi${UNIQUE_SUFFIX}"
 IMAGE_NAME="wan-api"
 
@@ -94,17 +95,24 @@ else
     exit 1
 fi
 
-# Deploy Azure Container Registry using Bicep
+# Deploy Azure Container Registry first (separate deployment for ACR)
 log_info "Deploying Azure Container Registry..."
 ACR_DEPLOYMENT_NAME="acr-deployment-$(date +%s)"
+
+# Generate registry name that matches Bicep's logic
+UNIQUE_SUFFIX=$(az group show --name "$RESOURCE_GROUP" --query id -o tsv | md5sum | cut -c1-13)
+REGISTRY_NAME="acrwanvideoapi${UNIQUE_SUFFIX}"
+
 if az deployment group create \
     --name "$ACR_DEPLOYMENT_NAME" \
     --resource-group "$RESOURCE_GROUP" \
     --template-file infra/acr.bicep \
     --parameters registryName="$REGISTRY_NAME" \
                  location="$LOCATION" \
-    --output none; then
-    log_success "Azure Container Registry deployed successfully"
+    --query 'properties.outputs.registryName.value' \
+    -o tsv > /tmp/registry_name.txt; then
+    REGISTRY_NAME=$(cat /tmp/registry_name.txt)
+    log_success "Azure Container Registry deployed: $REGISTRY_NAME"
 else
     log_error "Failed to deploy Azure Container Registry"
     exit 1

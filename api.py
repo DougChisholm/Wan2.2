@@ -6,6 +6,7 @@ Provides endpoints for text-to-video and image-to-video generation
 import io
 import logging
 import os
+import random
 import sys
 import tempfile
 import uuid
@@ -172,7 +173,6 @@ async def generate_video(
         
         # Handle seed
         if seed < 0:
-            import random
             seed = random.randint(0, sys.maxsize)
         
         # Process input image if provided

@@ -30,8 +30,8 @@ param minReplicas int = 1
 @description('Maximum number of replicas')
 param maxReplicas int = 3
 
-@description('CPU cores (in cores)')
-param cpu string = '4.0'
+@description('CPU cores')
+param cpu int = 4
 
 @description('Memory (in Gi)')
 param memory string = '16Gi'
@@ -127,7 +127,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
           name: 'wan-api'
           image: containerImage
           resources: {
-            cpu: json(cpu)
+            cpu: cpu
             memory: memory
             // GPU support in Container Apps is in preview
             // When available, GPU will be configured through workload profiles
