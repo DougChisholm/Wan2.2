@@ -80,8 +80,20 @@ If your research or project builds upon [**Wan2.1**](https://github.com/Wan-Vide
     - [x] Checkpoints of Wan2.2-Animate
     - [x] ComfyUI integration
     - [x] Diffusers integration
+- Wan2.2 REST API & Cloud Deployment
+    - [x] FastAPI REST API for video generation
+    - [x] Docker containerization with GPU support
+    - [x] Azure deployment with Container Apps
+    - [x] Infrastructure as Code (Bicep templates)
 
 ## Run Wan2.2
+
+Wan2.2 can be used in multiple ways:
+- **Local CLI**: Run inference scripts directly (see below)
+- **REST API**: Deploy as a web service with the included FastAPI server
+- **Cloud Deployment**: Deploy to Azure with GPU support using provided infrastructure templates
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for API and cloud deployment instructions.
 
 #### Installation
 Clone the repo:
@@ -418,6 +430,58 @@ export_to_video(replace_video, "diffusers_replace.mp4", fps=30)
 ```
 
 > 💡 If you're using **Wan-Animate**, we do not recommend using LoRA models trained on `Wan2.2`, since weight changes during training may lead to unexpected behavior.
+
+## Deploy as REST API
+
+Wan2.2 can be deployed as a REST API service for production use. We provide complete infrastructure code for Azure deployment with GPU support.
+
+### Quick Start
+
+```bash
+# Deploy to Azure (requires az login)
+./deploy.sh
+```
+
+### API Endpoints
+
+Once deployed, the API provides the following endpoints:
+
+- `POST /generate` - Generate video from text prompt and/or image
+- `GET /health` - Health check endpoint
+- `GET /tasks` - List available model tasks
+- `GET /sizes/{task}` - List supported sizes for a task
+
+### Example Usage
+
+```bash
+# Generate video from text
+curl -X POST "https://your-api-url/generate" \
+  -F "prompt=A cat sitting on a surfboard" \
+  -F "task=ti2v-5B" \
+  -F "size=1280*704" \
+  -o output.mp4
+
+# Generate video from text and image
+curl -X POST "https://your-api-url/generate" \
+  -F "prompt=A white cat on a beach" \
+  -F "image=@cat.jpg" \
+  -F "task=ti2v-5B" \
+  -o output.mp4
+```
+
+### Infrastructure
+
+The deployment includes:
+- **Azure Container Registry**: Stores Docker images
+- **Azure Container Apps**: Runs API with A100 GPU support
+- **Bicep Templates**: Infrastructure as Code
+- **Automated Deployment**: One-command deployment script
+
+For detailed instructions, see:
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Complete deployment guide
+- [API_EXAMPLES.md](API_EXAMPLES.md) - API usage examples
+- [Dockerfile](Dockerfile) - Container configuration
+- [infra/](infra/) - Bicep infrastructure templates
 
 ## Computational Efficiency on Different GPUs
 

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "baseName": {
+      "value": "wan-video-api"
+    },
+    "location": {
+      "value": "eastus"
+    },
+    "containerImageTag": {
+      "value": "latest"
+    },
+    "modelType": {
+      "value": "ti2v-5B"
+    },
+    "minReplicas": {
+      "value": 1
+    },
+    "maxReplicas": {
+      "value": 3
+    },
+    "tags": {
+      "value": {
+        "application": "wan-video-api",
+        "environment": "production",
+        "managedBy": "bicep"
+      }
+    }
+  }
+}

@@ -5,3 +5,24 @@ tmp_examples*
 new_checkpoint*
 batch_test*
 nohup*
+
+# API outputs
+outputs/
+/tmp/outputs/
+*.mp4
+
+# Model checkpoints (large files)
+models/
+checkpoints/
+Wan2.2-*/
+
+# Docker
+.dockerignore
+
+# Environment
+.env
+.env.local
+
+# Bicep compiled outputs
+infra/*.json
+!infra/parameters.json
