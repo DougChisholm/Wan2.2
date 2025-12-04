@@ -22,3 +22,7 @@ Wan2.2-*/
 # Environment
 .env
 .env.local
+
+# Bicep compiled outputs
+infra/*.json
+!infra/parameters.json
