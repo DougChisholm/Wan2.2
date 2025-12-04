@@ -1,0 +1,38 @@
+# Lightweight Dockerfile for testing API structure (without models)
+# Use this for local development and testing without GPU
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install minimal dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements_api.txt requirements.txt ./
+
+# Install Python dependencies (skip model-specific ones for testing)
+RUN pip install --no-cache-dir fastapi uvicorn[standard] python-multipart pillow
+
+# Copy application code
+COPY api.py ./
+COPY wan/__init__.py wan/
+COPY wan/configs/ wan/configs/
+
+# Create necessary directories
+RUN mkdir -p /tmp/outputs wan/utils wan/distributed
+
+# Create minimal mock files for testing
+RUN touch wan/utils/__init__.py wan/distributed/__init__.py
+
+# Expose port
+EXPOSE 8000
+
+# Set environment variables
+ENV MODEL_PATH=/app/models
+ENV DEVICE_ID=0
+ENV OUTPUT_DIR=/tmp/outputs
+
+# Run API (will fail on actual generation without models, but endpoints will work)
+CMD ["python", "api.py"]

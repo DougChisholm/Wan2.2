@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  wan-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: wan-api:latest
+    container_name: wan-video-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_TYPE=ti2v-5B
+      - MODEL_PATH=/app/models
+      - DEVICE_ID=0
+      - OUTPUT_DIR=/tmp/outputs
+      - HOST=0.0.0.0
+      - PORT=8000
+      - CUDA_VISIBLE_DEVICES=0
+    volumes:
+      # Mount local models directory if you have models downloaded
+      # - ./models:/app/models:ro
+      # Mount output directory
+      - ./outputs:/tmp/outputs
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Test service without GPU for API structure testing
+  wan-api-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    image: wan-api-test:latest
+    container_name: wan-video-api-test
+    ports:
+      - "8001:8000"
+    environment:
+      - MODEL_TYPE=ti2v-5B
+      - MODEL_PATH=/app/models
+      - OUTPUT_DIR=/tmp/outputs
+      - HOST=0.0.0.0
+      - PORT=8000
+    profiles:
+      - test
+    restart: unless-stopped
