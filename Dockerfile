@@ -1,5 +1,5 @@
 # Use NVIDIA CUDA base image with Ubuntu
-FROM nvidia/cuda:12.1.0-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -37,7 +37,7 @@ WORKDIR /app
 COPY requirements.txt requirements_api.txt ./
 
 # Install PyTorch with CUDA support first
-RUN pip install --no-cache-dir torch==2.4.0 torchvision==0.19.0 torchaudio --index-url https://download.pytorch.org/whl/cu121
+RUN pip install --no-cache-dir torch==2.4.0 torchvision==0.19.0 torchaudio --index-url https://download.pytorch.org/whl/cu124
 
 # Install flash-attn (may take a while to build)
 RUN pip install --no-cache-dir flash-attn --no-build-isolation
