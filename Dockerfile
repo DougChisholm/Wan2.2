@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y \
     libxrender-dev \
     libgomp1 \
     build-essential \
+    ninja-build \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Python 3 as default python and pip commands
@@ -42,8 +43,13 @@ COPY requirements.txt requirements_api.txt ./
 # Install PyTorch with CUDA support first
 RUN pip install --no-cache-dir torch==2.4.0 torchvision==0.19.0 torchaudio --index-url https://download.pytorch.org/whl/cu124
 
-# Install flash-attn (may take a while to build)
-RUN pip install --no-cache-dir flash-attn --no-build-isolation
+# Install flash-attn with proper build settings
+# Set MAX_JOBS to prevent OOM during compilation
+ENV MAX_JOBS=4
+RUN pip install --no-cache-dir packaging wheel
+RUN pip install --no-cache-dir flash-attn --no-build-isolation || \
+    pip install --no-cache-dir flash-attn==2.5.8 --no-build-isolation || \
+    echo "Warning: flash-attn installation failed, continuing without it"
 
 # Install remaining requirements
 RUN pip install --no-cache-dir -r requirements_api.txt
