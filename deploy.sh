@@ -237,3 +237,89 @@ log_info "To view logs:"
 log_info "az containerapp logs show --name \"$CONTAINER_APP_NAME\" --resource-group \"$RESOURCE_GROUP\" --follow"
 log_info ""
 log_success "Deployment complete!"
+
+## Alternative: Build with Azure Container Registry Tasks
+
+If you prefer to build the image in Azure instead of locally, you can use ACR Tasks. This is useful when:
+- You don't have Docker installed locally
+- You want to build in Azure's cloud environment
+- You're using CI/CD pipelines
+
+### Option B: Using ACR Tasks for Building
+
+ACR Tasks allow you to build Docker images directly in Azure without requiring Docker locally.
+
+#### 1. Create ACR and Build with ACR Tasks
+
+```bash
+# Set variables
+RESOURCE_GROUP="wan-video-api-rg"
+LOCATION="eastus"
+ACR_NAME="wanvideoapi$(date +%s | tail -c 5)"
+IMAGE_TAG="latest"
+
+# Login to Azure
+az login
+
+# Create resource group
+az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
+
+# Create Azure Container Registry
+az acr create \
+  --resource-group "$RESOURCE_GROUP" \
+  --name "$ACR_NAME" \
+  --sku Premium \
+  --admin-enabled true
+
+# Build the image using ACR Tasks (builds in Azure, no local Docker needed)
+# This uses the acr-task.yaml file which defines the build steps
+az acr build \
+  --registry "$ACR_NAME" \
+  --image "wan-api:$IMAGE_TAG" \
+  --file Dockerfile \
+  --timeout 3600 \
+  .
+
+# Alternative: Use the acr-task.yaml file for more complex builds
+az acr run \
+  --registry "$ACR_NAME" \
+  --file acr-task.yaml \
+  .
+```
+
+The ACR task will:
+1. Build the Docker image in Azure's cloud environment
+2. Automatically install Python and all dependencies
+3. Push the built image to your ACR
+4. Tag it appropriately
+
+#### 2. Deploy Container App After ACR Build
+
+Once the image is built with ACR tasks, deploy the container app:
+
+```bash
+# Get ACR login server
+ACR_LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" --query loginServer -o tsv)
+
+# Deploy using Bicep template
+az deployment group create \
+  --name "container-app-deployment-$(date +%s)" \
+  --resource-group "$RESOURCE_GROUP" \
+  --template-file infra/main.bicep \
+  --parameters baseName="wan-video-api" \
+               location="$LOCATION" \
+               containerImageTag="$IMAGE_TAG" \
+               modelType="ti2v-5B"
+```
+
+### Differences Between Build Methods
+
+| Feature | Local Build (deploy.sh) | ACR Tasks |
+|---------|-------------------------|-----------|
+| Requires Docker | Yes | No |
+| Build Location | Local machine | Azure cloud |
+| Build Time | 15-30 minutes | 20-35 minutes |
+| Network Impact | Must upload full image | Only uploads source code |
+| Best For | Development, testing | CI/CD, production |
+
+
