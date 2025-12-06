@@ -16,4 +16,4 @@ flash_attn
 numpy>=1.23.5,<2
 decord
 librosa
-huggingface_hub
+huggingface_hub[cli]

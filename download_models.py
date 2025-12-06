@@ -4,8 +4,8 @@ Download Wan 2.2 model weights from Hugging Face
 """
 import os
 import sys
+import subprocess
 from pathlib import Path
-from huggingface_hub import snapshot_download
 
 # Model configurations
 MODELS = {
@@ -31,17 +31,21 @@ def download_model(model_type, output_dir="/app/models"):
     print(f"Downloading {model_name} to {model_path}...")
     
     try:
-        # Download from Hugging Face
-        # Replace with actual Hugging Face repo path
-        repo_id = f"Alibaba-PAI/{model_name}"
+        # Download using huggingface-cli
+        repo_id = f"Wan-AI/{model_name}"
         
-        snapshot_download(
-            repo_id=repo_id,
-            local_dir=str(model_path),
-            local_dir_use_symlinks=False,
-            resume_download=True
-        )
+        cmd = [
+            "huggingface-cli",
+            "download",
+            repo_id,
+            "--local-dir",
+            str(model_path)
+        ]
         
+        print(f"Running: {' '.join(cmd)}")
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        
+        print(result.stdout)
         print(f"Successfully downloaded {model_name}")
         
     except Exception as e:
