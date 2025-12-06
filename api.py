@@ -18,7 +18,10 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from PIL import Image
 
-import wan
+# Import only the models we need to avoid loading dependencies for unused models
+from wan.text2video import WanT2V
+from wan.image2video import WanI2V
+from wan.textimage2video import WanTI2V
 from wan.configs import MAX_AREA_CONFIGS, SIZE_CONFIGS, WAN_CONFIGS
 from wan.utils.utils import save_video
 
@@ -64,7 +67,7 @@ def get_model(task: str):
         
         # Initialize appropriate model based on task
         if "t2v" in task:
-            model = wan.WanT2V(
+            model = WanT2V(
                 config=cfg,
                 checkpoint_dir=checkpoint_dir,
                 device_id=DEVICE_ID,
@@ -76,7 +79,7 @@ def get_model(task: str):
                 convert_model_dtype=True,
             )
         elif "ti2v" in task:
-            model = wan.WanTI2V(
+            model = WanTI2V(
                 config=cfg,
                 checkpoint_dir=checkpoint_dir,
                 device_id=DEVICE_ID,
@@ -88,7 +91,7 @@ def get_model(task: str):
                 convert_model_dtype=True,
             )
         elif "i2v" in task:
-            model = wan.WanI2V(
+            model = WanI2V(
                 config=cfg,
                 checkpoint_dir=checkpoint_dir,
                 device_id=DEVICE_ID,
