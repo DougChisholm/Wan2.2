@@ -8,9 +8,10 @@ ENV CUDA_HOME=/usr/local/cuda
 ENV PATH=${CUDA_HOME}/bin:${PATH}
 ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}
 
-# Install system dependencies
+# Install system dependencies including Python
+# Updated for reliable ACR task builds
 RUN apt-get update && apt-get install -y \
-    python3.10 \
+    python3 \
     python3-pip \
     python3-dev \
     git \
@@ -21,11 +22,13 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Set Python 3.10 as default
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
-RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
+# Set Python 3 as default python and pip commands
+# Ubuntu 22.04 comes with Python 3.10 as python3
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1 \
+    && update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
 
 # Upgrade pip
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel

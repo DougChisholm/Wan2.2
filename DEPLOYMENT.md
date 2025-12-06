@@ -21,6 +21,10 @@ Before deploying, ensure you have:
 
 ## Quick Start
 
+### Option A: Using the Deployment Script (Recommended)
+
+This option builds the Docker image locally and pushes it to ACR.
+
 ### 1. Login to Azure
 
 ```bash
@@ -81,6 +85,145 @@ curl -X POST "https://<your-app-url>/generate" \
   -F "size=1280*704" \
   -o output.mp4
 ```
+
+## Alternative: Building with ACR Tasks
+
+### Option B: Using ACR Tasks (No Local Docker Required)
+
+If you prefer to build the Docker image in Azure's cloud environment (useful for CI/CD or when Docker isn't installed locally), you can use Azure Container Registry Tasks.
+
+#### Prerequisites for ACR Tasks
+- Azure CLI installed and logged in (`az login`)
+- Azure subscription with appropriate permissions
+- No Docker installation required!
+
+#### Steps to Deploy with ACR Tasks
+
+1. **Create Resource Group and ACR**
+
+```bash
+# Set your configuration
+export RESOURCE_GROUP="wan-video-api-rg"
+export LOCATION="eastus"
+export ACR_NAME="wanvideoapi$(date +%s | tail -c 5)"
+export IMAGE_TAG="latest"
+
+# Login to Azure
+az login
+
+# Create resource group
+az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
+
+# Create Azure Container Registry
+az acr create \
+  --resource-group "$RESOURCE_GROUP" \
+  --name "$ACR_NAME" \
+  --sku Premium \
+  --admin-enabled true
+```
+
+2. **Build Image with ACR Tasks**
+
+The repository includes an `acr-task.yaml` file that defines the build process optimized for ACR:
+
+```bash
+# Option 1: Simple build with ACR
+az acr build \
+  --registry "$ACR_NAME" \
+  --image "wan-api:$IMAGE_TAG" \
+  --file Dockerfile \
+  --timeout 3600 \
+  .
+
+# Option 2: Use the acr-task.yaml for advanced configuration
+az acr run \
+  --registry "$ACR_NAME" \
+  --file acr-task.yaml \
+  .
+```
+
+The ACR task will:
+- Build the Docker image in Azure's cloud
+- Install Python 3.10 and all dependencies
+- Compile PyTorch and flash-attn with CUDA support
+- Push the image to your ACR automatically
+- This takes approximately 20-35 minutes
+
+3. **Deploy Container App**
+
+```bash
+# Deploy the infrastructure and container app
+az deployment group create \
+  --name "container-app-deployment-$(date +%s)" \
+  --resource-group "$RESOURCE_GROUP" \
+  --template-file infra/main.bicep \
+  --parameters baseName="wan-video-api" \
+               location="$LOCATION" \
+               containerImageTag="$IMAGE_TAG" \
+               modelType="ti2v-5B" \
+               minReplicas=1 \
+               maxReplicas=3
+
+# Get the deployment outputs
+ACR_LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer -o tsv)
+CONTAINER_APP_URL=$(az deployment group show \
+  --name "container-app-deployment-$(date +%s)" \
+  --resource-group "$RESOURCE_GROUP" \
+  --query properties.outputs.containerAppUrl.value -o tsv)
+
+echo "Container App URL: $CONTAINER_APP_URL"
+```
+
+4. **Test the Deployed API**
+
+```bash
+# Health check
+curl "$CONTAINER_APP_URL/health"
+
+# Generate a video
+curl -X POST "$CONTAINER_APP_URL/generate" \
+  -F "prompt=A cat sitting on a surfboard" \
+  -F "task=ti2v-5B" \
+  -F "size=1280*704" \
+  -o output.mp4
+```
+
+### Comparison: Local Build vs ACR Tasks
+
+| Feature | Local Build (deploy.sh) | ACR Tasks |
+|---------|-------------------------|-----------|
+| **Docker Required** | Yes | No |
+| **Build Location** | Local machine | Azure cloud |
+| **Build Time** | 15-30 minutes | 20-35 minutes |
+| **Upload Size** | ~10GB (full image) | ~100MB (source code) |
+| **Network Impact** | High (uploads full image) | Low (only source) |
+| **Build Resources** | Uses local CPU/RAM | Uses Azure resources |
+| **Best For** | Local development | CI/CD, production |
+| **Cost** | Free (uses local) | ACR task compute charges |
+
+### ACR Task Configuration
+
+The `acr-task.yaml` file defines the build steps:
+
+```yaml
+version: v1.1.0
+steps:
+  - build: >-
+      -t {{.Run.Registry}}/wan-api:{{.Run.ID}}
+      -t {{.Run.Registry}}/wan-api:latest
+      -f Dockerfile
+      --build-arg BUILDKIT_INLINE_CACHE=1
+      .
+    timeout: 3600
+```
+
+This configuration:
+- Tags images with both the run ID and "latest"
+- Uses BuildKit for better caching
+- Sets a 60-minute timeout for the build
+- Automatically pushes to the registry
+
+
 
 ## API Endpoints
 

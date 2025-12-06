@@ -1,0 +1,13 @@
+version: v1.1.0
+# Azure Container Registry Task Definition for Wan 2.2 Video API
+# This file defines the build steps for ACR to build the Docker image with Python support
+
+# Build step - builds the Docker image with proper Python installation
+steps:
+  - build: >-
+      -t {{.Run.Registry}}/wan-api:{{.Run.ID}}
+      -t {{.Run.Registry}}/wan-api:latest
+      -f Dockerfile
+      --build-arg BUILDKIT_INLINE_CACHE=1
+      .
+    timeout: 3600

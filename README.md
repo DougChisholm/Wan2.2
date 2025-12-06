@@ -84,6 +84,7 @@ If your research or project builds upon [**Wan2.1**](https://github.com/Wan-Vide
     - [x] FastAPI REST API for video generation
     - [x] Docker containerization with GPU support
     - [x] Azure deployment with Container Apps
+    - [x] Azure Container Registry (ACR) Tasks for cloud-based builds
     - [x] Infrastructure as Code (Bicep templates)
 
 ## Run Wan2.2
@@ -92,8 +93,9 @@ Wan2.2 can be used in multiple ways:
 - **Local CLI**: Run inference scripts directly (see below)
 - **REST API**: Deploy as a web service with the included FastAPI server
 - **Cloud Deployment**: Deploy to Azure with GPU support using provided infrastructure templates
+- **ACR Tasks**: Build Docker images in Azure without local Docker installation
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for API and cloud deployment instructions.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for API and cloud deployment instructions, including ACR Tasks.
 
 #### Installation
 Clone the repo:
